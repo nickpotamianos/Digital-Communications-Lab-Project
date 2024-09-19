@@ -65,29 +65,27 @@ run('bsc_simulation.m');
 ```
 ## Code Details
 Key Functions and Scripts
-
-    Pixel Symbol Probability Calculation: The script reads an image file and calculates the probability of each pixel value occurring.
-
-    matlab
+Pixel Symbol Probability Calculation: The script reads an image file and calculates the probability of each pixel value occurring.
+```matlab
 
 [symbols, ~, idx] = unique(I);
 counts = accumarray(idx(:), 1);
 probabilities = counts / numel(I);
-
+```
 Entropy Calculation: Shannon's entropy formula is used to calculate the entropy of the image pixel values:
 
-matlab
+```matlab
 
 entropy = -sum(probabilities .* log2(probabilities));
-
+```
 Huffman Coding: Construction of the Huffman tree and calculation of the average code length and efficiency:
 
-matlab
+```matlab
 
 dict = huffmandict(symbols, probabilities);
 avglen = sum(probabilities .* cellfun('length', dict(:, 2)));
 efficiency = entropy / avglen;
-
+```
 DPCM Encoding and Decoding: The implementation of DPCM encoding and decoding using different predictor orders and quantization levels.
 
 Example DPCM Code:
