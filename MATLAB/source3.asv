@@ -1,0 +1,60 @@
+% Φορτώστε τα δεδομένα πηγής
+load('source.mat'); % Φέρνουμε την υπόθεση ότι το source.mat φορτώνει το σήμα στην μεταβλητή t
+
+% Ορισμός των παραμέτρων του κβαντιστή
+max_val = 3.5;
+min_val = -3.5;
+num_bits = [1, 2, 3];  % Αριθμός bits για τον κβαντιστή
+
+% Ορισμός των τιμών του p
+p_values = 5:10;  % Εύρος τιμών του p
+
+% Αρχικοποίηση του διαγράμματος MSE
+mse_values = zeros(length(p_values), length(num_bits));
+
+% Εκτέλεση DPCM για κάθε τιμή του N και του p
+for N_idx = 1:length(num_bits)
+    N = num_bits(N_idx);
+    for p_idx = 1:length(p_values)
+        p = p_values(p_idx);
+        
+        % Αρχικοποίηση των εξόδων του κωδικοποιητή και του αποκωδικοποιητή
+        encoded_signal = zeros(1, length(t));
+        decoded_signal = zeros(1, length(t));
+        
+        % Αρχικοποίηση του φίλτρου πρόβλεψης
+        a = ones(1, p) * (1/p);  % Απλή προσέγγιση για τους συντελεστές
+        
+        % DPCM Κωδικοποίηση
+        for i = p+1:length(t)
+            % Πρόβλεψη του τρέχοντος δείγματος με βάση τα p προηγούμενα
+            prediction = sum(a .* decoded_signal(i-p:i-1));
+            error_signal = t(i) - prediction;
+            
+            % Κβάντιση του σήματος σφάλματος
+            quantized_error = round((error_signal - min_val) / (max_val - min_val) * ((2^N) - 1));
+            quantized_error = max(0, min(quantized_error, (2^N) - 1));
+            encoded_signal(i) = quantized_error;
+            
+            % Αποκωδικοποίηση του κβαντισμένου σφάλματος
+            dequantized_error = (quantized_error / ((2^N) - 1)) * (max_val - min_val) + min_val;
+            
+            % Ανακατασκευή του σήματος
+            decoded_signal(i) = prediction + dequantized_error;
+        end
+        
+        % Υπολογισμός και αποθήκευση του MSE
+        mse = mean((t - decoded_signal).^2);     
+        mse_values(p_idx, N_idx) = mean(mse(:));
+        
+    end
+end
+
+% Εμφάνιση των αποτελεσμάτων
+figure;
+plot(p_values, mse_values);
+title('MSE του DPCM για διάφορες τιμές του p και του N');
+xlabel('Τάξη του Προβλέπτη p');
+ylabel('MSE');
+legend(arrayfun(@(x) ['N=' num2str(x) ' bits'], num_bits, 'UniformOutput', false));
+grid on;

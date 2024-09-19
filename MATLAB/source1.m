@@ -1,0 +1,55 @@
+% Φορτώστε τα δεδομένα πηγής
+load('source.mat');
+
+% Ορισμός των παραμέτρων του κβαντιστή
+max_val = 3.5;
+min_val = -3.5;
+num_bits = 8;  
+
+% Ορισμός του φίλτρου πρόβλεψης
+% Χρησιμοποιούμε ένα απλό προβλέπτη πρώτης τάξης για αυτό το παράδειγμα
+% Εκτίμηση της αυτοσυσχέτισης του σήματος πηγής
+r = xcorr(t, 'unbiased');  % Υπολογίζει την αυτοσυσχέτιση του σήματος t
+r = r(length(t):end);  % Διατήρηση της μη αρνητικής καθυστέρησης
+
+% Λύση των εξισώσεων Yule-Walker
+a = -r(2) / r(1);  % Συντελεστής πρόβλεψης
+
+% Αρχικοποίηση των εξόδων του κωδικοποιητή και του αποκωδικοποιητή
+encoded_signal = zeros(size(t));
+decoded_signal = zeros(size(t));
+
+% DPCM Κωδικοποίηση
+for i = 2:length(t)
+    prediction = a * decoded_signal(i-1);  % Πρόβλεψη του επόμενου δείγματος
+    error_signal = t(i) - prediction;  % Υπολογισμός του σφάλματος πρόβλεψης
+    % Κβάντιση του σήματος σφάλματος
+    quantized_error = round((error_signal - min_val) / (max_val - min_val) * (2^num_bits - 1));
+    quantized_error = max(0, min(quantized_error, 2^num_bits - 1));
+    encoded_signal(i) = quantized_error;
+end
+
+% DPCM Αποκωδικοποίηση
+for i = 2:length(encoded_signal)
+    quantized_error = encoded_signal(i) * (max_val - min_val) / (2^num_bits - 1) + min_val;
+    prediction = a * decoded_signal(i-1);  % Πρόβλεψη του επόμενου δείγματος με βάση το προηγούμενο
+    decoded_signal(i) = prediction + quantized_error;  % Ανακατασκευή του αρχικού σήματος
+end
+
+% Σχεδίαση του αρχικού και του ανακατασκευασμένου σήματος για σύγκριση
+figure;
+subplot(2, 1, 1);
+plot(t);
+title('Αρχικό Σήμα');
+subplot(2, 1, 2);
+plot(decoded_signal);
+title('Ανακατασκευασμένο Σήμα');
+
+
+
+% Υπολογισμός του Μέσου Τετραγωνικού Σφάλματος (MSE)
+mse = mean((t - decoded_signal).^2);
+
+% Εμφάνιση του MSE
+disp(['Μέσο Τετραγωνικό Σφάλμα (MSE): ', num2str(mse)]);
+
