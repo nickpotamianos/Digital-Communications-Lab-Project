@@ -63,7 +63,7 @@ To simulate the **Binary Symmetric Channel (BSC)** and compute mutual informatio
 ```matlab
 run('bsc_simulation.m');
 ```
-Code Details
+##Code Details
 Key Functions and Scripts
 
     Pixel Symbol Probability Calculation: The script reads an image file and calculates the probability of each pixel value occurring.
